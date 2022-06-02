@@ -21,15 +21,19 @@ fa = cv2.cvtColor(fa,cv2.COLOR_RGB2GRAY)
 
 def threshold(I,seuil):
     return cv2.threshold(I,seuil,255,cv2.THRESH_BINARY)[1]
+
 def hotsu(I,size,C): #size doit être impair et au moins 3
     return cv2.adaptiveThreshold(I,255,cv2.ADAPTIVE_THRESH_MEAN_C,cv2.THRESH_BINARY,size,C)
+
 def dilate(I,x,y):
     return cv2.dilate(I,np.ones((y,x)))
 
 def erode(I,x,y):
     return cv2.erode(I,np.ones((x,y)))
+
 def bottomhat(I):
     return cv2.morphologyEx(I,cv2.MORPH_BLACKHAT,np.ones((11,11)))
+
 def gradient(I,x,y):
     return cv2.morphologyEx(I,cv2.MORPH_GRADIENT,np.ones((y,x)))
 
@@ -90,10 +94,8 @@ def detectionClef(J, clef):
     print('ysol :',yclef)
     return nbrclef, xclef, yclef, img
 
-
 keyheight = int(I.shape[0]/22.85)
 keywidth = int(I.shape[1]/46.67)
-
 J, sol = pretraitement(I, sol)
 d = detectionClef(J,sol)
 img = d[3]

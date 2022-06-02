@@ -5,6 +5,7 @@ import copy
 
 
 def intersectionBetweenLines(line1, line2):
+    print(line1, line2)
     theta1, rho1 = line1
     theta2, rho2 = line2
     x0 = (rho2 * np.sin(theta1) - rho1 * np.sin(theta2)) / (np.sin(theta1) * np.cos(theta2) - np.sin(theta2) * np.cos(theta1))
@@ -37,7 +38,7 @@ while(ret):
     img = img[int((ny - l)/2):int((ny + l)/2) , int((nx - L)/2):int((nx + L)/2)]
     I = cv2.cvtColor(img,cv2.COLOR_RGB2GRAY)
     I = cv2.filter2D(I,-1,1/25*np.ones((5,5)))
-  
+    
     #Affichage
     cv2.line(frame,(int((nx - L)/2),int((ny - l)/2)),(int((nx + L)/2),int((ny - l)/2)),(0,0,255),2)
     cv2.line(frame,(int((nx - L)/2),int((ny + l)/2)),(int((nx + L)/2),int((ny + l)/2)),(0,0,255),2)
@@ -66,7 +67,7 @@ while(ret):
     R = []
     borders = []
     s = np.sqrt(nx**2 + ny**2)
-    
+
     while not(h1 and h2 and v1 and v2) and type(lines) != type(None) and i < len(lines):
         line = lines[i]
         i += 1
@@ -110,7 +111,8 @@ while(ret):
             
     #Is = cv2.hconcat([frame,cv2.resize(I2,(int(I2.shape[1]*frame.shape[0]/I2.shape[0]),frame.shape[0]))])        
     #cv2.imshow('frame', Is)
-    plt.imshow(frame)
+    
+    cv2.imshow('I',frame)
       
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
@@ -142,34 +144,34 @@ borders.sort()
 # cv2.circle(frame, (x2,y2), radius=2, color=(0, 255, 0), thickness=-1)
 # cv2.circle(frame, (x3,y3), radius=2, color=(0, 255, 0), thickness=-1)
 
-def projectionRectangle(I):
-    #On sélectionne les lignes verticales
-    seuil = 2
-    gy,gx = np.gradient(I)
-    G = np.sqrt(gx**2 + gy**2)
-    G_thr = 255*(G>seuil).astype(np.uint8)
-    lines = cv2.HoughLines(G_thr,2,np.pi/180,300)
-    #On sélectionne les lignes horizontales
-    seuil = 2
-    gx,gy = np.gradient(I)
-    G = np.sqrt(gx**2 + gy**2)
-    G_thr = 255*(G>seuil).astype(np.uint8)
-    lines2 = cv2.HoughLines(G_thr,2,np.pi/180,300)
+# def projectionRectangle(I):
+#     #On sélectionne les lignes verticales
+#     seuil = 2
+#     gy,gx = np.gradient(I)
+#     G = np.sqrt(gx**2 + gy**2)
+#     G_thr = 255*(G>seuil).astype(np.uint8)
+#     lines = cv2.HoughLines(G_thr,2,np.pi/180,300)
+#     #On sélectionne les lignes horizontales
+#     seuil = 2
+#     gx,gy = np.gradient(I)
+#     G = np.sqrt(gx**2 + gy**2)
+#     G_thr = 255*(G>seuil).astype(np.uint8)
+#     lines2 = cv2.HoughLines(G_thr,2,np.pi/180,300)
     
-    #On cherche les intersections entre les lignes
-    intersections = []
-    for line1 in lines:
-        for line2 in lines2:
-            intersections.append(intersectionBetweenLines(line1, line2))
-    #On récupère la plus petite intersection
-    intersections = np.array(intersections)
-    min_index = np.argmin(intersections[:,0])
+#     #On cherche les intersections entre les lignes
+#     intersections = []
+#     for line1 in lines:
+#         for line2 in lines2:
+#             intersections.append(intersectionBetweenLines(line1, line2))
+#     #On récupère la plus petite intersection
+#     intersections = np.array(intersections)
+#     min_index = np.argmin(intersections[:,0])
     
-    #On calcule les coordonnées des coins du rectangle
-    return [int(intersections[min_index,0]),int(intersections[min_index,1]),int(intersections[min_index,0]),int(intersections[min_index,1])]
+#     #On calcule les coordonnées des coins du rectangle
+#     return [int(intersections[min_index,0]),int(intersections[min_index,1]),int(intersections[min_index,0]),int(intersections[min_index,1])]
 
-print(projectionRectangle(I))
+# print(projectionRectangle(I))
 feuille = img[min(y0,y1,y2,y3):max(y0,y1,y2,y3),min(x0,x1,x2,x3):max(x0,x1,x2,x3)]
 plt.imshow(feuille)
-
+plt.show()
 print(x0,y0,x1,y1,x2,y2,x3,y3)

@@ -1,13 +1,21 @@
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
+import operator
 
-I = cv2.imread('ProjetMajeure\Images\im4.jpg')
+I = cv2.imread('Images\im3.jpg')
 I = cv2.cvtColor(I,cv2.COLOR_RGB2GRAY)
 
-sol = cv2.imread('ProjetMajeure\Images\clefdesol.png')
+sol = cv2.imread('Images\clefdesol.png')
 sol = cv2.cvtColor(sol,cv2.COLOR_RGB2GRAY)
+# Une clef de sol fait 1.3cm de hauteur pour 0.45cm de largeur (parfois 0.4 parfois 0.5)
+# Une feuille fait 21cm x 29.7cm
+# La résolution de la photo varie tout le temps, donc on doit adapter la taille de l'élément structurant (la clef)
 
+# 1 - 4.38%, 1/22,85 | 0.45/21 -> 2.14%, 1/46.67
+
+keyheight = int(I.shape[0]/22.85)
+keywidth = int(I.shape[1]/46.67)
 
 def threshold(I,seuil):
     return cv2.threshold(I,seuil,255,cv2.THRESH_BINARY)[1]
@@ -44,12 +52,53 @@ J = hotsu(I,31,15) # 90x40 pour la clef de sol
 sol = threshold(sol, 96)
 sol = sol/255 # on binarise sol
 sol = sol.astype(np.uint8)
+print(I.shape)
+print(sol.shape)
+sol = cv2.resize(sol,(keywidth,keyheight))
+# sol = skeletonization(1-sol)
+sol = 1 - sol
 
-sol = cv2.resize(sol,(3*sol.shape[1]//40,3*sol.shape[0]//40))
-sol = skeletonization(1-sol)
-sol = 1-sol
+# On va comparer le nombre de pixels de la clef de sol en commun avec l'image
+# Pour ce faire, on regarde le premier quart de l'image pour réduire les calculs
 
-plt.imshow(sol, 'gray')
-plt.show()
+
+def detectionClef(J, clef):
+    img = J[:J.shape[1],:J.shape[0]//4]
+    img = img//255
+    img = 1 - img
+    img = img.astype(np.uint8)
+    xclef = []
+    yclef = []
+    nbrclef = 0
+    sustained = True
+    remainingLoops = 0
+    for i in range((img.shape[0]-clef.shape[0])//2): # On fait 1 pixel sur deux pour gagner en temps d'exécution
+        for j in range((img.shape[1]-clef.shape[1])//2):
+            if(cv2.countNonZero(img[2*i:2*i+clef.shape[0], 2*j:2*j+clef.shape[1]]*clef) >= cv2.countNonZero(clef)*0.5) and sustained == True: # Si le nombre de pixels en commun est supérieur à 90%
+                nbrclef += 1
+                yclef.append(2*i)
+                xclef.append(2*j)
+                sustained = False
+                remainingLoops = clef.shape[0]//2
+                break
+        if(sustained == False):
+            remainingLoops -=1
+            if(remainingLoops == 0):
+                sustained = True
+    print('Clefs trouvees :',nbrclef)
+    print('xsol :',xclef)
+    print('ysol :',yclef)
+    return nbrclef, xclef, yclef, img
+
+
+d = detectionClef(J,sol)
+img = d[3]
+plt.figure()
+plt.subplot(131)
 plt.imshow(J, 'gray')
+plt.subplot(132)
+plt.imshow(sol, 'gray')
+plt.subplot(133)
+plt.imshow(img, 'gray')
 plt.show()
+

@@ -159,6 +159,7 @@ def lecture(img):
             L = []
 
     for i in range(len(L)):
+        rythme.append(duration[L[i][::-1]])
         note.append(trans[tones[L[i][::-1]]])
         
     return note,rythme

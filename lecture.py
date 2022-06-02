@@ -18,8 +18,6 @@ fa = cv2.cvtColor(fa,cv2.COLOR_RGB2GRAY)
 
 # 1 - 4.38%, 1/22,85 | 0.45/21 -> 2.14%, 1/46.67
 
-keyheight = int(I.shape[0]/22.85)
-keywidth = int(I.shape[1]/46.67)
 
 def threshold(I,seuil):
     return cv2.threshold(I,seuil,255,cv2.THRESH_BINARY)[1]
@@ -48,25 +46,22 @@ def skeletonization(I):
             break
     return skel 
 
-    
-
 ## Détection de la clef et de l'armure
-def pretraitement(I):
+def pretraitement(I, clef):
     J = hotsu(I,31,15) # 90x40 pour la clef de sol
-    sol = threshold(sol, 96)
-    sol = sol/255 # on binarise sol
-    sol = sol.astype(np.uint8)
+    clef = threshold(clef, 96)
+    clef = clef/255 # on binarise clef
+    clef = clef.astype(np.uint8)
     print(I.shape)
-    print(sol.shape)
-    sol = cv2.resize(sol,(keywidth,keyheight))
-    # sol = skeletonization(1-sol)
-    sol = 1 - sol
-    return J,sol 
+    print(clef.shape)
+    clef = cv2.resize(clef,(keywidth,keyheight))
+    # clef = skeletonization(1-clef)
+    clef = 1 - clef
+    return J, clef 
 
 # On va comparer le nombre de pixels de la clef de sol en commun avec l'image
 # Pour ce faire, on regarde le premier quart de l'image pour réduire les calculs
 
-pretraitement(I)
 def detectionClef(J, clef):
     img = J[:J.shape[1],:J.shape[0]//4]
     img = img//255
@@ -96,6 +91,10 @@ def detectionClef(J, clef):
     return nbrclef, xclef, yclef, img
 
 
+keyheight = int(I.shape[0]/22.85)
+keywidth = int(I.shape[1]/46.67)
+
+J, sol = pretraitement(I, sol)
 d = detectionClef(J,sol)
 img = d[3]
 

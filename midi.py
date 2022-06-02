@@ -9,7 +9,7 @@ Created on Wed Jun  1 16:28:59 2022
 import mido
 import time
 
-def ecriture_midi(tones,titre):
+def ecriture_midi(tones,rythme,titre):
     """
     tones est le retour de la fonction de lecture de notres.py
     titre doit se finie en .mid
@@ -42,8 +42,7 @@ def ecriture_midi(tones,titre):
     for i in range(len(L)):
         note.append(trans[tones[L[i][::-1]]])
         
-    rythme = [1.0 for k in range(len(tones))] #durée des notes (que noires pour le moment)
-    hauteur = [0]  # choix des octaves à jouer, 12 = 1 octave et 0 = original
+    hauteur = [12]  # choix des octaves à jouer, 12 = 1 octave et 0 = original
      
     for h in hauteur:  # boucle octave à jouer par rapport aux notes d'origine
         delta = h  # nb d'octaves à ajouter ou soustraire exprimé par tranche de 12 notes

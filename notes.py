@@ -12,7 +12,7 @@ def line_evaluator(rho,theta,x):
     return rho/np.sin(theta) - x*np.cos(theta)/np.sin(theta)
 
 def lecture(img):
-    img = img[int(0.02*img.shape[0]):int(0.98*img.shape[0]) , int(0.02*img.shape[1]):int(0.98*img.shape[1])]
+    img = img[int(0.05*img.shape[0]):int(0.95*img.shape[0]) , int(0.05*img.shape[1]):int(0.95*img.shape[1])]
 
     if (len(img.shape) == 3):
         ny,nx,nc = img.shape
@@ -99,7 +99,7 @@ def lecture(img):
     croches = cv2.morphologyEx(I,cv2.MORPH_OPEN,SE) #Ne garde que les barres croches
 
     tones = {}
-    rythme = {}
+    duration = {}
     droites = sorted(zip(R,T))
     for n in notes_traitees:
         x = n[1]
@@ -134,9 +134,31 @@ def lecture(img):
         #On compte le nombre de pixels blancs dans le voisinage de la note sur l'image de croches
         V = np.count_nonzero(croches[y-5*d:y+5*d , x-d:x+d]) 
         if V > d**2/3:
-            rythme[(y,x)] = 0.5
+            duration[(y,x)] = 0.5
         else:
-            rythme[(y,x)] = 1.0
+            duration[(y,x)] = 1.0
+    print(tones,duration)    
+    #Traitement
+    trans = {-0.5:43 , 0:41 , 0.5:40 , 1:38 , 1.5:36 , 2:35 , 2.5:33 , 3:31 , 3.5:29 , 4:28 , 4.5:26}
+    note = []
+    rythme = []
+    coords = list(tones.keys())
+    ref = 0
+    L = []
+    k = 0
+    while k < len(coords):
+        if abs(coords[k][0] - coords[ref][0]) < 6*d:
+            L.append((coords[k][::-1]))
+            k += 1
+        else:
+            ref = k
+            L.sort()
+            for i in range(len(L)):
+                rythme.append(duration[L[i][::-1]])
+                note.append(trans[tones[L[i][::-1]]])
+            L = []
+
+    for i in range(len(L)):
+        note.append(trans[tones[L[i][::-1]]])
         
-    
-    return tones,rythme
+    return note,rythme

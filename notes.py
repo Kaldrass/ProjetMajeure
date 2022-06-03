@@ -31,10 +31,10 @@ def lecture(image):
 
 
     #Positionnement des portées (Transformée de Hough)
-    res = img
+    #res = img
     lines = cv2.HoughLines(I,1,np.pi/1000,int(img.shape[0]/2.5))
     #s = np.sqrt(nx**2 + ny**2)
-    s = nx
+    
     T = []
     R = []
     dr = d
@@ -55,16 +55,16 @@ def lecture(image):
                     R.append(rho)
                     T.append(theta)
                     nb += 1
-                    a = np.cos(theta)
-                    b = np.sin(theta)
-                    x0 = a*rho
-                    y0 = b*rho
-                    x1 = int(x0 + s*(-b))
-                    y1 = int(y0 + s*(a))
-                    x2 = int(x0 - s*(-b))
-                    y2 = int(y0 - s*(a))
+                    # a = np.cos(theta)
+                    # b = np.sin(theta)
+                    # x0 = a*rho
+                    # y0 = b*rho
+                    # x1 = int(x0 + s*(-b))
+                    # y1 = int(y0 + s*(a))
+                    # x2 = int(x0 - s*(-b))
+                    # y2 = int(y0 - s*(a))
                     
-                    cv2.line(res,(x1,y1),(x2,y2),(255,0,0),1)
+                    #cv2.line(res,(x1,y1),(x2,y2),(255,0,0),1)
     
     droites = sorted(zip(R,T))
     
@@ -101,10 +101,6 @@ def lecture(image):
             B = [int(sum([V[k][0] for k in range(len(V))])/len(V)) , int(sum([V[k][1] for k in range(len(V))])/len(V))]
             notes_traitees.append(B)
             
-    res_notes = img
-
-    for b in notes_traitees:
-        res_notes[b[0]-int(d/2):b[0]+int(d/2),b[1]-int(d/2):b[1]+int(d/2),0] = 255
         
     #Evaluation des notes
     SE = np.ones((int(0.45*d),int(1.5*d)))
@@ -112,7 +108,7 @@ def lecture(image):
 
     tones = {}
     duration = {}
-    
+    res = img
     for n in notes_traitees:
         x = n[1]
         y = n[0]
@@ -131,7 +127,7 @@ def lecture(image):
                 
             i += 1
         #Si l'écart à cette droite est trop grand, on ajoute/retire un demi-ton    
-        print((y,x),h,minimum)
+        
         h = h%5
         if minimum >= d/4:
             h -= 0.5
@@ -144,20 +140,26 @@ def lecture(image):
         #Rythme
         
         #On compte le nombre de pixels blancs dans le voisinage de la note sur l'image de croches
-        V = np.count_nonzero(croches[y-5*d:y+5*d , x-d:x+d]) 
+        V = np.count_nonzero(croches[y-8*d:y+8*d , x-2*d:x+2*d]) 
         if V > d**2/3:
             duration[(y,x)] = 0.5
+            res[y-10:y+10,x-10:x+10,0] = 255
         else:
             duration[(y,x)] = 1.0
+            res[y-10:y+10,x-10:x+10,2] = 255
+    
     print(tones)        
     #Traitement
     trans = {-0.5:43 , 0:41 , 0.5:40 , 1:38 , 1.5:36 , 2:35 , 2.5:33 , 3:31 , 3.5:29 , 4:28 , 4.5:26}
     note = []
     rythme = []
+    timing = []
+    t = 0
     coords = list(tones.keys())
     ref = 0
     L = []
     k = 0
+    
     while k < len(coords):
         if abs(coords[k][0] - coords[ref][0]) < 6*d:
             L.append((coords[k][::-1]))
@@ -168,13 +170,22 @@ def lecture(image):
             for i in range(len(L)):
                 rythme.append(duration[L[i][::-1]])
                 note.append(trans[tones[L[i][::-1]]])
+                timing.append(t)
+                #On vérifie si 2 notes ne sont pas jouées en même temps
+                if i < len(L)-1 and abs(L[i][0] - L[i+1][0]) > d:
+                    t += duration[L[i][::-1]]
+                
             L = []
 
     for i in range(len(L)):
         rythme.append(duration[L[i][::-1]])
         note.append(trans[tones[L[i][::-1]]])
+        timing.append(t)
+        #On vérifie si 2 notes ne sont pas jouées en même temps
+        if i < len(L)-1 and abs(L[i][0] - L[i+1][0]) > d:
+            t += duration[L[i][::-1]]
         
     
     plt.imshow(res,'gray')
     
-    return note,rythme
+    return note,rythme,timing

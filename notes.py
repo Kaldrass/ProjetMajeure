@@ -8,7 +8,6 @@ Created on Tue May 31 15:24:21 2022
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
-from copy import deepcopy
 
 def line_evaluator(rho,theta,x):
     return (rho - x*np.cos(theta))/np.sin(theta)
@@ -17,10 +16,10 @@ def line_eval(x1,y1,x2,y2,x):
     return (x-x2)/(x1-x2)*y1 + (x1-x)/(x1-x2)*y2
 
 def lecture(image):
-    img = deepcopy(image)
+    img = image.copy()
     #img = img[100:2000,125:1530]
     img = img[int(0.03*img.shape[0]):int(0.97*img.shape[0]) , int(0.03*img.shape[1]):int(0.97*img.shape[1])]
-
+    
     if (len(img.shape) == 3):
         ny,nx,nc = img.shape
         I = cv2.cvtColor(img,cv2.COLOR_RGB2GRAY)
@@ -29,12 +28,10 @@ def lecture(image):
     I = cv2.adaptiveThreshold(I, 255,cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 2*int((2*d)//2)+1, 2*int(d//4)+1)
     I = 255 - I
 
-
     #Positionnement des portées (Transformée de Hough)
-    #res = img
     lines = cv2.HoughLines(I,1,np.pi/1000,int(img.shape[0]/2.5))
-    #s = np.sqrt(nx**2 + ny**2)
-    
+    s = np.sqrt(nx**2 + ny**2)
+    res = img.copy()
     T = []
     R = []
     dr = d
@@ -55,25 +52,32 @@ def lecture(image):
                     R.append(rho)
                     T.append(theta)
                     nb += 1
-                    # a = np.cos(theta)
-                    # b = np.sin(theta)
-                    # x0 = a*rho
-                    # y0 = b*rho
-                    # x1 = int(x0 + s*(-b))
-                    # y1 = int(y0 + s*(a))
-                    # x2 = int(x0 - s*(-b))
-                    # y2 = int(y0 - s*(a))
+                    a = np.cos(theta)
+                    b = np.sin(theta)
+                    x0 = a*rho
+                    y0 = b*rho
+                    x1 = int(x0 + s*(-b))
+                    y1 = int(y0 + s*(a))
+                    x2 = int(x0 - s*(-b))
+                    y2 = int(y0 - s*(a))
                     
-                    #cv2.line(res,(x1,y1),(x2,y2),(255,0,0),1)
+                    cv2.line(res,(x1,y1),(x2,y2),(255,0,0),1)
+    
+    # plt.subplot(121)
+    # plt.imshow(I,'gray')
+    # plt.subplot(122)
+    # plt.imshow(res)
     
     droites = sorted(zip(R,T))
     
     D = sum([droites[k][0] for k in range(4,len(droites),5)]) - sum([droites[k][0] for k in range(0,len(droites),5)])
     d = int(D/(len(R) - len(R)//5))
+    d = int(0.9*d)
     #plt.imshow(res)
+    #print(d)
 
     #Repérage des notes
-    d2 = int(d/5)
+    d2 = int(d/8)
     SE = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (int(0.95*d),int(0.95*d)))
     SE2 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (d2,d2))
 
@@ -105,6 +109,7 @@ def lecture(image):
     #Evaluation des notes
     SE = np.ones((int(0.45*d),int(1.5*d)))
     croches = cv2.morphologyEx(I,cv2.MORPH_OPEN,SE) #Ne garde que les barres croches
+    croches = cv2.dilate(croches,SE)
 
     tones = {}
     duration = {}
@@ -143,12 +148,25 @@ def lecture(image):
         
         #On compte le nombre de pixels blancs dans le voisinage de la note sur l'image de croches
         V = np.count_nonzero(croches[y-8*d:y+8*d , x-2*d:x+2*d]) 
-        if V > d**2/3:
-            duration[(y,x)] = 0.5
+        V1 = np.count_nonzero(croches[y-8*d:y+8*d , x-3*d:x]) 
+        V2 = np.count_nonzero(croches[y-8*d:y+8*d , x:x+3*d]) 
+        
+        # if V > d**2/3:
+        #     duration[(y,x)] = 0.5
+        #     #res[y-10:y+10,x-10:x+10,0] = 255
+        # else:
+        #     duration[(y,x)] = 1.0
+        #     #res[y-10:y+10,x-10:x+10,2] = 255
+            
+        if V1 > 4.5*d**2 or V2 > 4.5*d**2:
             res[y-10:y+10,x-10:x+10,0] = 255
+            duration[(y,x)] = 0.25
+        elif V1 > 0.5*d**2 or V2 > 0.5*d**2:
+            res[y-10:y+10,x-10:x+10,1] = 255
+            duration[(y,x)] = 0.5
         else:
-            duration[(y,x)] = 1.0
             res[y-10:y+10,x-10:x+10,2] = 255
+            duration[(y,x)] = 1.0
     
     #print(tones)        
     #Traitement
@@ -173,7 +191,11 @@ def lecture(image):
             
             for i in range(len(L)):
                 rythme.append(duration[L[i][::-1]])
-                note.append(trans[tones[L[i][::-1]]])
+                #Evitement des clés de sols considérées comme des notes
+                try:
+                    note.append(trans[tones[L[i][::-1]]])
+                except:
+                    continue
                 timing.append(t)
                 #On vérifie si 2 notes ne sont pas jouées en même temps
                 if i < len(L)-1 and abs(L[i][0] - L[i+1][0]) > d:
@@ -185,7 +207,11 @@ def lecture(image):
     L.sort()
     for i in range(len(L)):
         rythme.append(duration[L[i][::-1]])
-        note.append(trans[tones[L[i][::-1]]])
+        #Evitement des clés de sols considérées comme des notes
+        try:
+            note.append(trans[tones[L[i][::-1]]])
+        except:
+            continue
         timing.append(t)
         #On vérifie si 2 notes ne sont pas jouées en même temps
         if i < len(L)-1 and abs(L[i][0] - L[i+1][0]) > d:
@@ -193,7 +219,9 @@ def lecture(image):
         elif i == len(L) - 1:
             t += 1
         
-    
-    plt.imshow(res,'gray')
+    # plt.subplot(121)
+    # plt.imshow(res,'gray')
+    # plt.subplot(122)
+    # plt.imshow(croches,'gray')
     
     return note,rythme,timing

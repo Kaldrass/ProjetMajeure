@@ -150,7 +150,7 @@ def lecture(image):
     
     print(tones)        
     #Traitement
-    trans = {-0.5:43 , 0:41 , 0.5:40 , 1:38 , 1.5:36 , 2:35 , 2.5:33 , 3:31 , 3.5:29 , 4:28 , 4.5:26}
+    trans = {-0.5:67 , 0:65 , 0.5:64 , 1:62 , 1.5:60 , 2:59 , 2.5:57 , 3:55 , 3.5:53 , 4:52 , 4.5:50}
     note = []
     rythme = []
     timing = []
@@ -174,6 +174,8 @@ def lecture(image):
                 #On vérifie si 2 notes ne sont pas jouées en même temps
                 if i < len(L)-1 and abs(L[i][0] - L[i+1][0]) > d:
                     t += duration[L[i][::-1]]
+                elif i == len(L) - 1:
+                    t += 1
                 
             L = []
 
@@ -184,6 +186,8 @@ def lecture(image):
         #On vérifie si 2 notes ne sont pas jouées en même temps
         if i < len(L)-1 and abs(L[i][0] - L[i+1][0]) > d:
             t += duration[L[i][::-1]]
+        elif i == len(L) - 1:
+            t += 1
         
     
     plt.imshow(res,'gray')

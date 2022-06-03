@@ -10,14 +10,14 @@ from midiutil.MidiFile import MIDIFile
 import mido
 import time
 
-def ecriture_midi(notes,rythme,timing,titre):
+def ecriture_midi(notes,rythme,timing,vitesse,titre):
     # create your MIDI object
     mf = MIDIFile(1)     # only 1 track
     track = 0   # the only track
 
     time = 0    # start at the beginning
     mf.addTrackName(track, time, "Sample Track")
-    mf.addTempo(track, time, 120)
+    mf.addTempo(track, time, vitesse)
 
     # add some notes
     channel = 0

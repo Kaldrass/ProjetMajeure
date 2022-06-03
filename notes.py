@@ -119,7 +119,7 @@ def lecture(image):
         
         i = 0
         #On recherche la droite la plus proche
-        while i < len(droites) and droites[i][0] < y + 2*d:
+        while i < len(droites):
             y_portee = line_evaluator(droites[i][0],droites[i][1],x)
             if abs(y_portee - y) < abs(minimum):
                 minimum = y_portee - y
@@ -127,12 +127,14 @@ def lecture(image):
                 
             i += 1
         #Si l'écart à cette droite est trop grand, on ajoute/retire un demi-ton    
-        
-        h = h%5
-        if minimum >= d/4:
-            h -= 0.5
-        elif minimum <= -d/4:
-            h += 0.5
+        #print((x,y),h,minimum,h%5-round(2*minimum/d)/2)
+        # h = h%5
+        # if minimum >= d/4:
+        #     h -= 0.5
+        # elif minimum <= -d/4:
+        #     h += 0.5
+        # print(h)
+        h = h%5-round(2*minimum/d)/2
             
         tones[(y,x)] = h
         
@@ -148,9 +150,9 @@ def lecture(image):
             duration[(y,x)] = 1.0
             res[y-10:y+10,x-10:x+10,2] = 255
     
-    print(tones)        
+    #print(tones)        
     #Traitement
-    trans = {-0.5:67 , 0:65 , 0.5:64 , 1:62 , 1.5:60 , 2:59 , 2.5:57 , 3:55 , 3.5:53 , 4:52 , 4.5:50}
+    trans = {-3:76 , -2.5:74 , -2:72 , -1.5:71 , -1:69 ,-0.5:67 , 0:65 , 0.5:64 , 1:62 , 1.5:60 , 2:59 , 2.5:57 , 3:55 , 3.5:53 , 4:52 , 4.5:50 , 5:48 , 5.5:47 , 6:45 , 6.5:43 , 7:41}
     note = []
     rythme = []
     timing = []
@@ -168,7 +170,7 @@ def lecture(image):
         else:
             ref = k
             L.sort()
-            print(L)
+            
             for i in range(len(L)):
                 rythme.append(duration[L[i][::-1]])
                 note.append(trans[tones[L[i][::-1]]])
@@ -177,11 +179,10 @@ def lecture(image):
                 if i < len(L)-1 and abs(L[i][0] - L[i+1][0]) > d:
                     t += duration[L[i][::-1]]
                 elif i == len(L) - 1:
-                    t += 1
+                    t += duration[L[i][::-1]]
                 
             L = []
     L.sort()
-    print(L)
     for i in range(len(L)):
         rythme.append(duration[L[i][::-1]])
         note.append(trans[tones[L[i][::-1]]])

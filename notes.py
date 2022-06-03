@@ -161,12 +161,14 @@ def lecture(image):
     k = 0
     
     while k < len(coords):
-        if abs(coords[k][0] - coords[ref][0]) < 6*d:
+        #print(coords[k],coords[ref],abs(coords[k][0] - coords[ref][0]))
+        if abs(coords[k][0] - coords[ref][0]) < 14*d:
             L.append((coords[k][::-1]))
             k += 1
         else:
             ref = k
             L.sort()
+            print(L)
             for i in range(len(L)):
                 rythme.append(duration[L[i][::-1]])
                 note.append(trans[tones[L[i][::-1]]])
@@ -178,7 +180,8 @@ def lecture(image):
                     t += 1
                 
             L = []
-
+    L.sort()
+    print(L)
     for i in range(len(L)):
         rythme.append(duration[L[i][::-1]])
         note.append(trans[tones[L[i][::-1]]])

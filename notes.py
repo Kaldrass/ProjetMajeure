@@ -62,19 +62,12 @@ def lecture(image):
                     y2 = int(y0 - s*(a))
                     
                     cv2.line(res,(x1,y1),(x2,y2),(255,0,0),1)
-    
-    # plt.subplot(121)
-    # plt.imshow(I,'gray')
-    # plt.subplot(122)
-    # plt.imshow(res)
-    
+        
     droites = sorted(zip(R,T))
     
     D = sum([droites[k][0] for k in range(4,len(droites),5)]) - sum([droites[k][0] for k in range(0,len(droites),5)])
     d = int(D/(len(R) - len(R)//5))
-    d = int(0.9*d)
-    #plt.imshow(res)
-    #print(d)
+    #d = int(0.95*d) #A REMETTRE OU PAS ?
 
     #Repérage des notes
     d2 = int(d/8)
@@ -114,6 +107,7 @@ def lecture(image):
     tones = {}
     duration = {}
     res = img
+    print(d)
     for n in notes_traitees:
         x = n[1]
         y = n[0]
@@ -132,32 +126,17 @@ def lecture(image):
                 
             i += 1
         #Si l'écart à cette droite est trop grand, on ajoute/retire un demi-ton    
-        #print((x,y),h,minimum,h%5-round(2*minimum/d)/2)
-        # h = h%5
-        # if minimum >= d/4:
-        #     h -= 0.5
-        # elif minimum <= -d/4:
-        #     h += 0.5
-        # print(h)
+        print(x,y,h,minimum)
         h = h%5-round(2*minimum/d)/2
             
         tones[(y,x)] = h
         
         
         #Rythme
-        
         #On compte le nombre de pixels blancs dans le voisinage de la note sur l'image de croches
-        V = np.count_nonzero(croches[y-8*d:y+8*d , x-2*d:x+2*d]) 
         V1 = np.count_nonzero(croches[y-8*d:y+8*d , x-3*d:x]) 
         V2 = np.count_nonzero(croches[y-8*d:y+8*d , x:x+3*d]) 
-        
-        # if V > d**2/3:
-        #     duration[(y,x)] = 0.5
-        #     #res[y-10:y+10,x-10:x+10,0] = 255
-        # else:
-        #     duration[(y,x)] = 1.0
-        #     #res[y-10:y+10,x-10:x+10,2] = 255
-            
+                    
         if V1 > 4.5*d**2 or V2 > 4.5*d**2:
             res[y-10:y+10,x-10:x+10,0] = 255
             duration[(y,x)] = 0.25
@@ -168,7 +147,7 @@ def lecture(image):
             res[y-10:y+10,x-10:x+10,2] = 255
             duration[(y,x)] = 1.0
     
-    #print(tones)        
+    print(tones)        
     #Traitement
     trans = {-3:76 , -2.5:74 , -2:72 , -1.5:71 , -1:69 ,-0.5:67 , 0:65 , 0.5:64 , 1:62 , 1.5:60 , 2:59 , 2.5:57 , 3:55 , 3.5:53 , 4:52 , 4.5:50 , 5:48 , 5.5:47 , 6:45 , 6.5:43 , 7:41}
     note = []
@@ -218,10 +197,5 @@ def lecture(image):
             t += duration[L[i][::-1]]
         elif i == len(L) - 1:
             t += 1
-        
-    # plt.subplot(121)
-    # plt.imshow(res,'gray')
-    # plt.subplot(122)
-    # plt.imshow(croches,'gray')
     
     return note,rythme,timing

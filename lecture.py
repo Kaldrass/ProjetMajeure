@@ -109,62 +109,66 @@ def detectionClef(J, clef):
                 sustained = False
                 remainingLoops = clef.shape[0]//2 # On saute un nombre de ligne équivalent à la hauteur de la clef
                 break
-        
-    print('Clefs trouvees :',nbrclef)
+    print('Clefs trouvees :', len(xclef))
     print('xsol :',xclef)
     print('ysol :',yclef)
-    return nbrclef, xclef, yclef, img
+    return  xclef, yclef, img
 
-def detectionArmure(J,alterations,xclef,yclef):
-    img = J[:J.shape[1],:J.shape[0]//4]
+def detectionArmure(J,alterations,xclef,yclef,clef):
+    img = J[:,:max(xclef)+clef.shape[1]+10*alterations[0].shape[1]]
     img = img//255
     img = 1 - img
     img = img.astype(np.uint8)
+    # img = erode(img, 3,1)
+
     xarmure = []
     yarmure = []
     nbrarmure = 0
-    sustained = True
-    remainingLoops = 0
+
     for n in range(len(alterations)): #  dièse ou bémol
-        for i in range(len(xclef)//2): # On fait 1 pixel sur deux en hauteur, et en largeur pour gagner en temps d'ex. 
-            for j in range((img.shape[1])//4): # Largeur
-                if(sustained == False):
-                    remainingLoops -= 1
-                if(remainingLoops == 0):
-                    sustained = True
-                else:
-                    continue
-                for k in range(len(xclef)): # On parcourt les lignes de toutes les clefs trouvées
-                    if(cv2.countNonZero(img[yclef[k]+2*i:yclef[k]+2*i+alterations[n].shape[0], xclef[k]+2*j:xclef[k]+2*j+alterations[n].shape[1]]*alterations[n]) >= cv2.countNonZero(alterations[n])*0.65):
+        for k in range(len(xclef)): # On parcourt les lignes de toutes les clefs trouvées len(xclef) = nbrclefs
+            # for i in range(0,(img.shape[0]-alterations[0].shape[0])//(len(xclef)),2): # On fait 1 pixel sur deux en hauteur, et en largeur pour gagner en temps d'ex. 
+            i = 0            
+            while i < clef.shape[0]:
+                j = 0
+                while j < 9*alterations[n].shape[1]:
+                    matchingPix = cv2.countNonZero(img[yclef[k]+i:yclef[k]+i+alterations[n].shape[0], xclef[k]+clef.shape[1]+j:xclef[k]+clef.shape[1]+j+alterations[n].shape[1]]*alterations[n])
+                    notmatchingPix = cv2.countNonZero((1-img[yclef[k]+i:yclef[k]+i+alterations[n].shape[0], xclef[k]+clef.shape[1]+j:xclef[k]+clef.shape[1]+j+alterations[n].shape[1]])*(1-alterations[n]))
+                    if(matchingPix >= cv2.countNonZero(alterations[n])*0.8 and notmatchingPix >= cv2.countNonZero(alterations[n])*0.9):
                         nbrarmure += 1
-                        yarmure.append(yclef[k]+2*i)
-                        xarmure.append(xclef[k]+2*j)
+                        yarmure.append(yclef[k]+i)
+                        xarmure.append(xclef[k]+clef.shape[1]+j)
+                        j += alterations[n].shape[1]
+                        i += 2
+                        continue
+                    # print(' x , y :',xclef[k]+clef.shape[1]+j,yclef[k]+i)
+                    j+=2
+                i+=2
+
     print('Armures trouvees :',nbrarmure)
     print('xarmure :',xarmure)
     print('yarmure :',yarmure)
-    return(nbrarmure, xarmure, yarmure)
+    return(nbrarmure, xarmure, yarmure, img)
 
                 
 
 J, sol, alterations = pretraitement(I, sol, alterations)
 d = detectionClef(J,sol)
-img = d[3]
-a = detectionArmure(J,alterations,d[1],d[2])
-plt.figure()
-# plt.subplot(121)
-# plt.imshow(alterations[0], 'gray')
-# plt.subplot(122)
-# plt.imshow(alterations[1], 'gray')
-# plt.show()
+img = d[2]
+a = detectionArmure(J,alterations,d[0],d[1], sol)
+
+plt.imshow(a[3], 'gray')
+plt.show()
 # plt.subplot(131)
 # plt.imshow(J, 'gray')
 # plt.subplot(132)
-# plt.imshow(alterations[0], 'gray')
+plt.imshow(alterations[0], 'gray')
 # plt.subplot(133)
-plt.imshow(img, 'gray')
+# plt.imshow(img, 'gray')
 plt.show()
 plt.figure()
 for i in range(a[0]):
     plt.imshow(img[a[2][i]:a[2][i]+alterations[0].shape[0], a[1][i]:a[1][i]+alterations[0].shape[1]], 'gray')
+    plt.title('x = '+str(a[1][i])+' y = '+str(a[2][i]))
     plt.show()
 

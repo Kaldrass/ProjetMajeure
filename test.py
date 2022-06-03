@@ -16,7 +16,7 @@ def intersectionBetweenLines(line1, line2):
     x0, y0 = int(np.round(x0)), int(np.round(y0))
     return [x0, y0]
 
-vid = cv2.VideoCapture(1)
+vid = cv2.VideoCapture(2)
 vid.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
 vid.set(cv2.CAP_PROP_FRAME_WIDTH, 1080)
 frame_width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH))

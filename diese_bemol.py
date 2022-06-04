@@ -12,7 +12,7 @@ import numpy as np
 
 #H : 1/59.4, L = 1/105
 
-I = cv2.imread('./Images/im4v2.png')
+I = cv2.imread('./Images/im4v2.jpg')
 I = cv2.cvtColor(I,cv2.COLOR_RGB2GRAY)
 
 d = int(I.shape[0]/168)
@@ -64,7 +64,7 @@ for n in notes_traitees:
     for i in range(0,case.shape[0] - diese.shape[0]):
         for j in range(0,case.shape[1] - diese.shape[1]):
             res_diese[y-2*d+i,x-3*d+j] = np.count_nonzero(case[i:i+diese.shape[0],j:j+diese.shape[1]] * diese)
- 
+            
 res_bemol = np.zeros(I.shape)        
 for n in notes_traitees:
     y,x = n
@@ -72,15 +72,18 @@ for n in notes_traitees:
     
     for i in range(0,case.shape[0] - bemol.shape[0]):
         for j in range(0,case.shape[1] - bemol.shape[1]):
-            res_bemol[y-2*d+i,x-3*d+j] = np.count_nonzero(case[i:i+bemol.shape[0],j:j+bemol.shape[1]] * bemol)
-              
+            res_bemol[y-2*d+i,x-3*d+j] = 0.7*np.count_nonzero(case[i:i+bemol.shape[0],j:j+bemol.shape[1]] * bemol) + 0.3*np.count_nonzero((255-case[i:i+bemol.shape[0],j:j+bemol.shape[1]]) * (255-bemol))
+   
  
 plt.subplot(221)
 plt.imshow(I,'gray')
 
 plt.subplot(222)
-plt.imshow(cv2.dilate(255*(res_diese>150).astype(np.uint8),diese),'gray')
+# plt.imshow(cv2.dilate(255*(res_diese>635).astype(np.uint8),diese),'gray')
+#plt.imshow(0.33*cv2.dilate(I_e,SE) + 0.33*I + 0.33*res_diese,'gray')
+plt.imshow(res_diese,'gray')
 
 plt.subplot(223)
-#plt.imshow(cv2.dilate(255*(res_bemol>130).astype(np.uint8),bemol),'gray')
+# plt.imshow(cv2.dilate(255*(res_bemol>435).astype(np.uint8),bemol),'gray')
+#plt.imshow(0.33*cv2.dilate(I_e,SE) + 0.33*I + 0.33*res_bemol,'gray')
 plt.imshow(res_bemol,'gray')

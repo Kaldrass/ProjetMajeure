@@ -3,7 +3,7 @@
 """
 Created on Wed Jun  1 16:28:59 2022
 
-@author: axel.nael
+@author: jonathan.bouyer
 """
 
 import mido

@@ -12,7 +12,7 @@ import numpy as np
 
 #H : 1/59.4, L = 1/105
 
-I = cv2.imread('./Images/im4v2.jpg')
+I = cv2.imread('./Images/im5.jpg')
 I = cv2.cvtColor(I,cv2.COLOR_RGB2GRAY)
 
 d = int(I.shape[0]/168)

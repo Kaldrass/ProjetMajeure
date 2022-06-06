@@ -3,7 +3,7 @@
 """
 Created on Fri Jun  3 11:18:10 2022
 
-@author: axel.nael
+@author: jonathan.bouyer
 """
 
 from midiutil.MidiFile import MIDIFile

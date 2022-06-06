@@ -3,7 +3,7 @@
 """
 Created on Fri Jun  3 14:04:47 2022
 
-@author: axel.nael
+@author: jonathan.bouyer
 """
 
 import cv2

@@ -115,14 +115,14 @@ def detectionClef(J, clef):
     return  xclef, yclef, img
 
 def detectionArmure(J,alterations,xclef,yclef,clef):
-    img = J[:,:max(xclef)+clef.shape[1]+10*alterations[0].shape[1]]
+    img = J[:,:max(xclef)+clef.shape[1]+7*alterations[0].shape[1]]
     img = img//255
     img = 1 - img
     img = img.astype(np.uint8)
     # img = erode(img, 3,1)
 
-    xarmure = []
-    yarmure = []
+    xarmure = np.array([], int)
+    yarmure = np.array([], int)
     nbrarmure = 0
 
     for n in range(len(alterations)): #  dièse ou bémol
@@ -131,19 +131,31 @@ def detectionArmure(J,alterations,xclef,yclef,clef):
             i = 0            
             while i < clef.shape[0]:
                 j = 0
-                while j < 9*alterations[n].shape[1]:
+                while j < 6*alterations[n].shape[1]: # On regarde sur une fenêtre de largeur 7*largeur de l'alteration (7 = nombre de notes dans une armure)
                     matchingPix = cv2.countNonZero(img[yclef[k]+i:yclef[k]+i+alterations[n].shape[0], xclef[k]+clef.shape[1]+j:xclef[k]+clef.shape[1]+j+alterations[n].shape[1]]*alterations[n])
                     notmatchingPix = cv2.countNonZero((1-img[yclef[k]+i:yclef[k]+i+alterations[n].shape[0], xclef[k]+clef.shape[1]+j:xclef[k]+clef.shape[1]+j+alterations[n].shape[1]])*(1-alterations[n]))
-                    if(matchingPix >= cv2.countNonZero(alterations[n])*0.8 and notmatchingPix >= cv2.countNonZero(alterations[n])*0.9):
-                        nbrarmure += 1
-                        yarmure.append(yclef[k]+i)
-                        xarmure.append(xclef[k]+clef.shape[1]+j)
-                        j += alterations[n].shape[1]
-                        i += 2
-                        continue
-                    # print(' x , y :',xclef[k]+clef.shape[1]+j,yclef[k]+i)
+                    if(matchingPix >= cv2.countNonZero(alterations[n])*0.7 and notmatchingPix >= cv2.countNonZero(1-alterations[n])*0.7):
+                        if(xarmure.size == 0):
+                            nbrarmure += 1
+                            yarmure = np.append(yarmure,yclef[k]+i)
+                            xarmure = np.append(xarmure,xclef[k]+clef.shape[1]+j)
+                            j += alterations[n].shape[1]
+                            i += 2
+                        else:
+                            if((np.absolute(xarmure - (xclef[k]+clef.shape[1]+j)).min() <= alterations[n].shape[1]//4 and np.absolute(yarmure - (yclef[k]+i)).min() <= alterations[n].shape[0]//4)):
+                                # Si on détecte deux fois la même altération
+                                print(' xmin : ',(np.absolute(xarmure - xclef[k]+clef.shape[1]+j).argmin(),'ymin : ',np.absolute(yarmure - yclef[k]+i).argmin()))
+                                j+=2
+                                i+=1
+                                continue
+                            nbrarmure += 1  
+                            yarmure = np.append(yarmure,yclef[k]+i)
+                            xarmure = np.append(xarmure,xclef[k]+clef.shape[1]+j)
+                            j += alterations[n].shape[1]
+                            i += 2
                     j+=2
-                i+=2
+                i+=1
+    print('alterations x , y:',alterations[0].shape[1]//2, alterations[0].shape[0]//2)
 
     print('Armures trouvees :',nbrarmure)
     print('xarmure :',xarmure)
@@ -151,12 +163,13 @@ def detectionArmure(J,alterations,xclef,yclef,clef):
     return(nbrarmure, xarmure, yarmure, img)
 
                 
-
 J, sol, alterations = pretraitement(I, sol, alterations)
 d = detectionClef(J,sol)
 img = d[2]
 a = detectionArmure(J,alterations,d[0],d[1], sol)
-
+# test = skeletonization(a[3])
+# plt.imshow(test)
+# plt.show()
 plt.imshow(a[3], 'gray')
 plt.show()
 # plt.subplot(131)

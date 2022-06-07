@@ -98,7 +98,6 @@ def lecture(image):
             B = [int(sum([V[k][0] for k in range(len(V))])/len(V)) , int(sum([V[k][1] for k in range(len(V))])/len(V))]
             notes_traitees.append(B)
             
-        
     #Evaluation des notes
     SE = np.ones((int(0.4*d),int(1.3*d)))
     croches = cv2.morphologyEx(I,cv2.MORPH_OPEN,SE) #Ne garde que les barres croches
@@ -134,7 +133,6 @@ def lecture(image):
         #On compte le nombre de pixels blancs dans le voisinage de la note sur l'image de croches
         V1 = np.count_nonzero(croches[y-8*d:y+8*d , x-3*d:x]) 
         V2 = np.count_nonzero(croches[y-8*d:y+8*d , x:x+3*d]) 
-        print(y,x,V1,V2)            
         if V1 > 3*d**2 or V2 > 3*d**2:
             res[y-10:y+10,x-10:x+10,0] = 255
             duration[(y,x)] = 0.25
@@ -144,7 +142,81 @@ def lecture(image):
         else:
             res[y-10:y+10,x-10:x+10,2] = 255
             duration[(y,x)] = 1.0
-           
+    
+    
+    #Ajout des dièses et des bémols
+    diese = 255 - cv2.cvtColor(cv2.imread('./Images/diese.png'),cv2.COLOR_RGB2GRAY)
+    diese = cv2.resize(diese,(int(I.shape[1]/105),int(I.shape[0]/59)))
+    diese = (255*(diese>0)).astype(np.uint8)
+
+    bemol = 255 - cv2.cvtColor(cv2.imread('./Images/bemol.png'),cv2.COLOR_RGB2GRAY)
+    bemol = cv2.resize(bemol,(int(I.shape[1]/105),int(I.shape[0]/59)))
+    bemol = (255*(bemol>0)).astype(np.uint8)
+
+    res_diese = np.zeros(I.shape)        
+    for n in notes_traitees:
+        y,x = n
+        case = I[y-3*d:y+2*d,x-3*d:x]
+        
+        for i in range(0,case.shape[0] - diese.shape[0]):
+            for j in range(0,case.shape[1] - diese.shape[1]):
+                res_diese[y-3*d+i,x-3*d+j] = np.count_nonzero(case[i:i+diese.shape[0],j:j+diese.shape[1]] * diese)
+                
+    n_diese = len(np.argwhere(diese != 0))
+    res_diese = (res_diese > 0.75*n_diese).astype(np.uint8)
+    dieses = np.argwhere(res_diese != 0)
+    coords_dieses = []
+    diese_y,diese_x = diese.shape
+    for n in dieses:
+        treated = False
+        #On vérifie si la note a déjà été traitée
+        for k in coords_dieses:
+            if abs(k[0] - n[0]) < d/2 and abs(k[1] - n[1]) < d/2:
+                treated = True
+                break
+            
+        V = [] #Voisinage de la note
+        for k in dieses:
+            if abs(k[0] - n[0]) < d/2 and abs(k[1] - n[1]) < d/2:
+                V.append(k)
+        #Calcul du barycentre du voisinage et ajout de ce dernier à la liste des notes traitées    
+        if not(treated):
+            B = [int(sum([V[k][0] for k in range(len(V))])/len(V)), int(sum([V[k][1] for k in range(len(V))])/len(V))]
+            coords_dieses.append(B)
+            
+            
+    
+    res_bemol = np.zeros(I.shape)        
+    for n in notes_traitees:
+        y,x = n
+        case = I[y-3*d:y+2*d,x-3*d:x]
+        
+        for i in range(0,case.shape[0] - bemol.shape[0]):
+            for j in range(0,case.shape[1] - bemol.shape[1]):
+                res_bemol[y-3*d+i,x-3*d+j] = 0.7*np.count_nonzero(case[i:i+bemol.shape[0],j:j+bemol.shape[1]] * bemol) + 0.3*np.count_nonzero((255-case[i:i+bemol.shape[0],j:j+bemol.shape[1]]) * (255-bemol))
+    
+    n_bemol = 0.7*len(np.argwhere(bemol != 0)) + 0.3*len(np.argwhere(bemol == 0))
+    res_bemol = (res_bemol > 0.75*n_bemol).astype(np.uint8)
+    bemols = np.argwhere(res_bemol != 0)
+    coords_bemols = []
+    bemol_y,bemol_x = bemol.shape
+    for n in bemols:
+        treated = False
+        #On vérifie si la note a déjà été traitée
+        for k in coords_bemols:
+            if abs(k[0] - n[0]) < d/2 and abs(k[1] - n[1]) < d/2:
+                treated = True
+                break
+            
+        V = [] #Voisinage de la note
+        for k in bemols:
+            if abs(k[0] - n[0]) < d/2 and abs(k[1] - n[1]) < d/2:
+                V.append(k)
+        #Calcul du barycentre du voisinage et ajout de ce dernier à la liste des notes traitées    
+        if not(treated):
+            B = [int(sum([V[k][0] for k in range(len(V))])/len(V)) , int(sum([V[k][1] for k in range(len(V))])/len(V))]
+            coords_bemols.append(B)    
+    print(tones)
     #Traitement
     trans = {-3:76 , -2.5:74 , -2:72 , -1.5:71 , -1:69 ,-0.5:67 , 0:65 , 0.5:64 , 1:62 , 1.5:60 , 2:59 , 2.5:57 , 3:55 , 3.5:53 , 4:52 , 4.5:50 , 5:48 , 5.5:47 , 6:45 , 6.5:43 , 7:41}
     note = []
@@ -155,9 +227,18 @@ def lecture(image):
     ref = 0
     L = []
     k = 0
-    
+    alt = {coords[k]:0 for k in range(len(coords))}
     while k < len(coords):
-        #print(coords[k],coords[ref],abs(coords[k][0] - coords[ref][0]))
+        y,x = notes_traitees[k]
+        for alt_y,alt_x in coords_dieses:
+            if abs(y - alt_y - diese_y//2) < d and abs(x - alt_x - diese_x//2) < 2*d :
+                alt[(y,x)] = 1
+                print(y,x,"diese")
+        for alt_y,alt_x in coords_bemols:
+            if abs(y - alt_y - bemol_y//2) < d and abs(x - alt_x - bemol_x//2) < 2*d :
+                alt[(y,x)] = -1
+                print(y,x,"bemol")
+                
         if abs(coords[k][0] - coords[ref][0]) < 14*d:
             L.append((coords[k][::-1]))
             k += 1
@@ -169,7 +250,8 @@ def lecture(image):
                 rythme.append(duration[L[i][::-1]])
                 #Evitement des clés de sols considérées comme des notes
                 try:
-                    note.append(trans[tones[L[i][::-1]]])
+                    hauteur = trans[tones[L[i][::-1]]] + alt[L[i][::-1]]
+                    note.append(hauteur)
                 except:
                     continue
                 timing.append(t)
@@ -185,7 +267,8 @@ def lecture(image):
         rythme.append(duration[L[i][::-1]])
         #Evitement des clés de sols considérées comme des notes
         try:
-            note.append(trans[tones[L[i][::-1]]])
+            hauteur = trans[tones[L[i][::-1]]] + alt[L[i][::-1]]
+            note.append(hauteur)
         except:
             continue
         timing.append(t)
@@ -194,7 +277,6 @@ def lecture(image):
             t += duration[L[i][::-1]]
         elif i == len(L) - 1:
             t += 1
-    
     
     plt.imshow(res)
     return note,rythme,timing

@@ -106,8 +106,7 @@ def lecture(image):
 
     tones = {}
     duration = {}
-    res = img
-    print(4.5*d**2,0.5*d**2)
+    
     for n in notes_traitees:
         x = n[1]
         y = n[0]
@@ -136,7 +135,7 @@ def lecture(image):
         V1 = np.count_nonzero(croches[y-8*d:y+8*d , x-3*d:x]) 
         V2 = np.count_nonzero(croches[y-8*d:y+8*d , x:x+3*d]) 
         print(y,x,V1,V2)            
-        if V1 > 4*d**2 or V2 > 4*d**2:
+        if V1 > 3*d**2 or V2 > 3*d**2:
             res[y-10:y+10,x-10:x+10,0] = 255
             duration[(y,x)] = 0.25
         elif V1 > 0.5*d**2 or V2 > 0.5*d**2:
@@ -195,5 +194,7 @@ def lecture(image):
             t += duration[L[i][::-1]]
         elif i == len(L) - 1:
             t += 1
-            
+    
+    
+    plt.imshow(res)
     return note,rythme,timing

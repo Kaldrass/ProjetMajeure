@@ -21,7 +21,7 @@ def coords_cle(image):
     if len(I.shape) == 3:
         I = cv2.cvtColor(I,cv2.COLOR_RGB2GRAY)
     
-    d = int(I.shape[0]/168)
+    d = int(I.shape[0]/168) # Ecart approx entre 2 lignes
     I = cv2.adaptiveThreshold(I, 255,cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 2*int((2*d)//2)+1, 2*int(d//4)+1)
     I = 255 - I
     

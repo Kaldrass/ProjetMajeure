@@ -6,7 +6,7 @@ import operator
 import diese_bemol
 import test_sol
 
-I = cv2.imread('Images\im3.jpg')
+I = cv2.imread('Images\im4v2.jpg')
 I = cv2.cvtColor(I,cv2.COLOR_RGB2GRAY)
 
 sol = cv2.imread('Images\clefdesol.png')
@@ -166,7 +166,7 @@ def detectionArmure(J,alterations,coordclef,clef):
                                 i+=1
                                 continue
                             nbrarmure += 1  
-                            ytemp = np.append(ytemp,yclef[k]-clef.shape[0]//2+i)
+                            ytemp = np.append(ytemp,yclef[k]-clef.shape[0]//2-15+i)
                             xtemp = np.append(xtemp,xclef[k]+clef.shape[1]//2+j)
                             # Cela correspond à la position du pixel en haut à gauche de l'altération
                             j += alterations[n].shape[1]
@@ -177,6 +177,7 @@ def detectionArmure(J,alterations,coordclef,clef):
             yarmure = np.append(yarmure,ytemp)
             xtemp = np.array([], int)
             ytemp = np.array([], int)
+
     print('Armures trouvees :',nbrarmure)
     print('xarmure :',xarmure)
     print('yarmure :',yarmure)
@@ -203,10 +204,10 @@ print(coordsClef)
 img = d[2]
 a = detectionArmure(J,alterations,coordsClef, sol) # nbrarmure, xarmure, yarmure, img
 # alterationsNotes = detectionAlterationsNotes(alterations,diese_bemol.notes,J) # alterationsnotes
-# nbrAlterations = a[0]//len(d[0]) #Pas besoin d'une division entière normalement
+nbrAlterations = a[0]//len(coordsClef) # Pas besoin d'une division entière normalement
 ordreDieses = np.array(['FA','DO','SOL','RE','LA','MI','SI'])
-# notesAlterees = ordreDieses[:nbrAlterations]
-# print(notesAlterees)
+notesAlterees = ordreDieses[:nbrAlterations]
+print(notesAlterees)
 # print(alterationsNotes)
 plt.figure()
 for i in range(a[0]):

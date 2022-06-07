@@ -71,7 +71,7 @@ def lecture(image):
 
     #Repérage des notes
     d2 = int(d/8)
-    SE = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (int(0.95*d),int(0.95*d)))
+    SE = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (int(0.9*d),int(0.9*d)))
     SE2 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (d2,d2))
 
     I_f = cv2.morphologyEx(I, cv2.MORPH_CLOSE, SE2, iterations = 1)
@@ -100,14 +100,14 @@ def lecture(image):
             
         
     #Evaluation des notes
-    SE = np.ones((int(0.45*d),int(1.5*d)))
+    SE = np.ones((int(0.4*d),int(1.3*d)))
     croches = cv2.morphologyEx(I,cv2.MORPH_OPEN,SE) #Ne garde que les barres croches
     croches = cv2.dilate(croches,SE)
 
     tones = {}
     duration = {}
     res = img
-    print(d)
+    print(4.5*d**2,0.5*d**2)
     for n in notes_traitees:
         x = n[1]
         y = n[0]
@@ -126,7 +126,6 @@ def lecture(image):
                 
             i += 1
         #Si l'écart à cette droite est trop grand, on ajoute/retire un demi-ton    
-        print(x,y,h,minimum)
         h = h%5-round(2*minimum/d)/2
             
         tones[(y,x)] = h
@@ -136,8 +135,8 @@ def lecture(image):
         #On compte le nombre de pixels blancs dans le voisinage de la note sur l'image de croches
         V1 = np.count_nonzero(croches[y-8*d:y+8*d , x-3*d:x]) 
         V2 = np.count_nonzero(croches[y-8*d:y+8*d , x:x+3*d]) 
-                    
-        if V1 > 4.5*d**2 or V2 > 4.5*d**2:
+        print(y,x,V1,V2)            
+        if V1 > 4*d**2 or V2 > 4*d**2:
             res[y-10:y+10,x-10:x+10,0] = 255
             duration[(y,x)] = 0.25
         elif V1 > 0.5*d**2 or V2 > 0.5*d**2:
@@ -146,8 +145,7 @@ def lecture(image):
         else:
             res[y-10:y+10,x-10:x+10,2] = 255
             duration[(y,x)] = 1.0
-    
-    print(tones)        
+           
     #Traitement
     trans = {-3:76 , -2.5:74 , -2:72 , -1.5:71 , -1:69 ,-0.5:67 , 0:65 , 0.5:64 , 1:62 , 1.5:60 , 2:59 , 2.5:57 , 3:55 , 3.5:53 , 4:52 , 4.5:50 , 5:48 , 5.5:47 , 6:45 , 6.5:43 , 7:41}
     note = []
@@ -197,5 +195,5 @@ def lecture(image):
             t += duration[L[i][::-1]]
         elif i == len(L) - 1:
             t += 1
-    
+            
     return note,rythme,timing

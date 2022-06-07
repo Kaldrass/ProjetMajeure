@@ -1,12 +1,10 @@
-from xml.etree.ElementInclude import XINCLUDE_FALLBACK
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 import operator
-import diese_bemol
 import test_sol
 
-I = cv2.imread('Images\im4v2.jpg')
+I = cv2.imread('Images\im5.jpg')
 I = cv2.cvtColor(I,cv2.COLOR_RGB2GRAY)
 
 sol = cv2.imread('Images\clefdesol.png')
@@ -120,9 +118,6 @@ def detectionClef(J, clef):
                 break
             j += 1
         i += 1
-    # print('Clefs trouvees :', len(xclef))
-    # print('xsol :',xclef)
-    # print('ysol :',yclef)
     return  xclef, yclef, img
 
 def detectionArmure(J,alterations,coordclef,clef):
@@ -141,16 +136,16 @@ def detectionArmure(J,alterations,coordclef,clef):
     for n in range(len(alterations)): #  dièse ou bémol
         for k in range(len(xclef)): # On parcourt les lignes de toutes les clefs trouvées len(xclef) = nbrclefs
             i = 0            
-            while i < clef.shape[0]: # On parcourt les lignes de la clef
+            while i < clef.shape[0]+15: # On parcourt les lignes de la clef
                 j = 0
                 while j < 6*alterations[n].shape[1]: # On regarde sur une fenêtre de largeur 7*largeur de l'alteration (7 = nombre de notes max dans une armure)
-                    matchingPix = cv2.countNonZero(img[yclef[k]-clef.shape[0]//2-15+i:yclef[k]-clef.shape[0]//2-15+i+alterations[n].shape[0], xclef[k]+clef.shape[1]//2+j:xclef[k]+clef.shape[1]//2+j+alterations[n].shape[1]]*alterations[n])
-                    notmatchingPix = cv2.countNonZero((1-img[yclef[k]-clef.shape[0]//2-15+i:yclef[k]-clef.shape[0]//2-15+i+alterations[n].shape[0], xclef[k]+clef.shape[1]//2+j:xclef[k]+clef.shape[1]//2+j+alterations[n].shape[1]])*(1-alterations[n]))
+                    matchingPix = cv2.countNonZero(img[yclef[k]-clef.shape[0]//2 + i -15:yclef[k]-clef.shape[0]//2 + i-15+alterations[n].shape[0], xclef[k]+clef.shape[1]//2+j:xclef[k]+clef.shape[1]//2+j+alterations[n].shape[1]]*alterations[n])
+                    notmatchingPix = cv2.countNonZero((1-img[yclef[k]-clef.shape[0]//2 +i -15:yclef[k]-clef.shape[0]//2 +i-15+alterations[n].shape[0], xclef[k]+clef.shape[1]//2+j:xclef[k]+clef.shape[1]//2+j+alterations[n].shape[1]])*(1-alterations[n]))
                     if(matchingPix >= cv2.countNonZero(alterations[n])*0.7 and notmatchingPix >= cv2.countNonZero(1-alterations[n])*0.7):
                         if(xtemp.size == 0): # Si c'est la première altération trouvée (pb avec .min() d'une liste vide)
                             if(xclef[k]+clef.shape[1]//2+j <= xclef[k]+clef.shape[1]//2 + 2*alterations[n].shape[1]):
                                 nbrarmure += 1
-                                ytemp = np.append(ytemp,yclef[k]-clef.shape[0]//2-15+i)
+                                ytemp = np.append(ytemp,yclef[k]-clef.shape[0]//2 +i -15)
                                 xtemp = np.append(xtemp,xclef[k]+clef.shape[1]//2+j)
                                 j += alterations[n].shape[1]
                                 i += 2
@@ -166,7 +161,7 @@ def detectionArmure(J,alterations,coordclef,clef):
                                 i+=1
                                 continue
                             nbrarmure += 1  
-                            ytemp = np.append(ytemp,yclef[k]-clef.shape[0]//2-15+i)
+                            ytemp = np.append(ytemp,yclef[k]-clef.shape[0]//2+i)
                             xtemp = np.append(xtemp,xclef[k]+clef.shape[1]//2+j)
                             # Cela correspond à la position du pixel en haut à gauche de l'altération
                             j += alterations[n].shape[1]
@@ -177,7 +172,6 @@ def detectionArmure(J,alterations,coordclef,clef):
             yarmure = np.append(yarmure,ytemp)
             xtemp = np.array([], int)
             ytemp = np.array([], int)
-
     print('Armures trouvees :',nbrarmure)
     print('xarmure :',xarmure)
     print('yarmure :',yarmure)
@@ -200,18 +194,21 @@ def detectionAlterationsNotes(alterations, notes, img):
 J, sol, alterations = pretraitement(I, sol, alterations)
 d = detectionClef(J,sol) # xclef, coordclef[:][0], img
 coordsClef = test_sol.coords_cle(J)
-print(coordsClef)
+print('coords Clef', coordsClef)
 img = d[2]
 a = detectionArmure(J,alterations,coordsClef, sol) # nbrarmure, xarmure, yarmure, img
 # alterationsNotes = detectionAlterationsNotes(alterations,diese_bemol.notes,J) # alterationsnotes
 nbrAlterations = a[0]//len(coordsClef) # Pas besoin d'une division entière normalement
 ordreDieses = np.array(['FA','DO','SOL','RE','LA','MI','SI'])
 notesAlterees = ordreDieses[:nbrAlterations]
-print(notesAlterees)
-# print(alterationsNotes)
+print('notes alterees :', notesAlterees)
+
+plt.imshow(sol, cmap='gray')   
+plt.show()
 plt.figure()
 for i in range(a[0]):
+    plt.subplot(2,a[0]/2,i+1)
     plt.imshow(img[a[2][i]:a[2][i]+alterations[0].shape[0], a[1][i]:a[1][i]+alterations[0].shape[1]], 'gray')
     plt.title('x = '+str(a[1][i])+' y = '+str(a[2][i]))
-    plt.show()
+plt.show()
 

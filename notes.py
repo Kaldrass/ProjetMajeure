@@ -99,7 +99,9 @@ def lecture(image):
             notes_traitees.append(B)
             
     #Evaluation des notes
-    SE = np.ones((int(0.4*d),int(1.3*d)))
+    SE = np.ones((int(0.3*d),int(1.5*d)))
+    SE2 = np.ones((int(0.5*d),int(0.2*d)))
+    croches = cv2.morphologyEx(I,cv2.MORPH_CLOSE,SE2)
     croches = cv2.morphologyEx(I,cv2.MORPH_OPEN,SE) #Ne garde que les barres croches
     croches = cv2.dilate(croches,SE)
 
@@ -215,8 +217,8 @@ def lecture(image):
         #Calcul du barycentre du voisinage et ajout de ce dernier à la liste des notes traitées    
         if not(treated):
             B = [int(sum([V[k][0] for k in range(len(V))])/len(V)) , int(sum([V[k][1] for k in range(len(V))])/len(V))]
-            coords_bemols.append(B)    
-    print(tones)
+            coords_bemols.append(B)  
+            
     #Traitement
     trans = {-3:76 , -2.5:74 , -2:72 , -1.5:71 , -1:69 ,-0.5:67 , 0:65 , 0.5:64 , 1:62 , 1.5:60 , 2:59 , 2.5:57 , 3:55 , 3.5:53 , 4:52 , 4.5:50 , 5:48 , 5.5:47 , 6:45 , 6.5:43 , 7:41}
     note = []
@@ -233,11 +235,9 @@ def lecture(image):
         for alt_y,alt_x in coords_dieses:
             if abs(y - alt_y - diese_y//2) < d and abs(x - alt_x - diese_x//2) < 2*d :
                 alt[(y,x)] = 1
-                print(y,x,"diese")
         for alt_y,alt_x in coords_bemols:
             if abs(y - alt_y - bemol_y//2) < d and abs(x - alt_x - bemol_x//2) < 2*d :
                 alt[(y,x)] = -1
-                print(y,x,"bemol")
                 
         if abs(coords[k][0] - coords[ref][0]) < 14*d:
             L.append((coords[k][::-1]))

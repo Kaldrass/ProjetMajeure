@@ -4,8 +4,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import operator
 import diese_bemol
+import test_sol
 
-I = cv2.imread('Images\im4.jpg')
+I = cv2.imread('Images\im3.jpg')
 I = cv2.cvtColor(I,cv2.COLOR_RGB2GRAY)
 
 sol = cv2.imread('Images\clefdesol.png')
@@ -16,6 +17,7 @@ fa = cv2.cvtColor(fa,cv2.COLOR_RGB2GRAY)
 
 alterations = [cv2.imread('Images\diese.png'), cv2.imread('Images\\bemol.png')]
 alterations = [cv2.cvtColor(alterations[0],cv2.COLOR_RGB2GRAY), cv2.cvtColor(alterations[1],cv2.COLOR_RGB2GRAY)]
+
 
 # Une clef de sol fait 1.3cm de hauteur pour 0.45cm de largeur (parfois 0.4 parfois 0.5), à faire pour la clef de fa
 # Une feuille fait 21cm x 29.7cm
@@ -65,9 +67,16 @@ def pretraitement(I, clef, alterations):
     alterationsheight = int(I.shape[0]/59.40)
     alterationswidth = int(I.shape[1]/105)
     J = hotsu(I,31,15) # 90x40 pour la clef de sol
-    clef = threshold(clef, 96)
-    clef = clef/255 # on binarise clef
-    clef = clef.astype(np.uint8)
+    # clef = threshold(clef, 96)
+    # clef = clef/255 # on binarise clef
+    # clef = clef.astype(np.uint8)
+
+    # prétraitement de Jonathan
+    s = 2*(int(clef.shape[1]/15)//2)+1
+    clef = cv2.dilate(clef,np.ones((s,s)))
+    clef = cv2.resize(clef,(int(0.45/21*I.shape[1]),int(1.4/29.7*I.shape[0])))
+    clef = ((clef==0).astype(np.uint8))
+
     print(I.shape)
     print(clef.shape)
     clef = cv2.resize(clef,(solkeywidth,solkeyheight))
@@ -94,70 +103,80 @@ def detectionClef(J, clef):
     xclef = []
     yclef = []
     nbrclef = 0
-    sustained = True
-    remainingLoops = 0
-    for i in range((img.shape[0]-clef.shape[0])//2): # On fait 1 pixel sur deux en hautuer et en largeur pour gagner en temps d'exécution
-        if(sustained == False):
-            remainingLoops -= 1
-            if(remainingLoops == 0):
-                sustained = True
-            else:
-                continue
-        for j in range((img.shape[1]-clef.shape[1])//2):
-            if(cv2.countNonZero(img[2*i:2*i+clef.shape[0], 2*j:2*j+clef.shape[1]]*clef) >= cv2.countNonZero(clef)*0.6) and sustained == True: # Si le nombre de pixels en commun est supérieur à 50% (suffisant)
+    # for i in range((img.shape[0]-clef.shape[0])//2): # On fait 1 pixel sur deux en hauteur et en largeur pour gagner en temps d'exécution
+    i = 0
+    while i < (img.shape[0]-clef.shape[0])//2:
+        # for j in range((img.shape[1]-clef.shape[1])//2):
+        j = 0
+        while j < (img.shape[1]-clef.shape[1])//2:
+            matchingPix = cv2.countNonZero(img[2*i:2*i+clef.shape[0], 2*j:2*j+clef.shape[1]]*clef)
+            notmatchingPix = cv2.countNonZero(1-img[2*i:2*i+clef.shape[0], 2*j:2*j+clef.shape[1]]*(1-clef))
+            if(matchingPix >= cv2.countNonZero(clef)*0.2 and notmatchingPix >= cv2.countNonZero(1-clef)*0.8): # Si le nombre de pixels en commun est supérieur à 50% (suffisant)
                 nbrclef += 1
                 yclef.append(2*i)
                 xclef.append(2*j)
-                sustained = False
-                remainingLoops = clef.shape[0]//2 # On saute un nombre de ligne équivalent à la hauteur de la clef
+                i += clef.shape[0]//2 - 1 # On saute un nombre de ligne équivalent à la hauteur de la clef
+                j = 0
                 break
-    print('Clefs trouvees :', len(xclef))
-    print('xsol :',xclef)
-    print('ysol :',yclef)
+            j += 1
+        i += 1
+    # print('Clefs trouvees :', len(xclef))
+    # print('xsol :',xclef)
+    # print('ysol :',yclef)
     return  xclef, yclef, img
 
-def detectionArmure(J,alterations,xclef,yclef,clef):
-    img = J[:,:max(xclef)+clef.shape[1]+7*alterations[0].shape[1]]
+def detectionArmure(J,alterations,coordclef,clef):
+    xclef = [k[1] for k in coordclef]
+    yclef = [k[0] for k in coordclef]
+    img = J[:,:max(xclef)+clef.shape[1]//2+7*alterations[0].shape[1]]
     img = img//255
     img = 1 - img
     img = img.astype(np.uint8)
     # img = erode(img, 3,1)
-
+    xtemp = np.array([], int)
+    ytemp = np.array([], int)
     xarmure = np.array([], int)
     yarmure = np.array([], int)
     nbrarmure = 0
-
     for n in range(len(alterations)): #  dièse ou bémol
         for k in range(len(xclef)): # On parcourt les lignes de toutes les clefs trouvées len(xclef) = nbrclefs
             i = 0            
             while i < clef.shape[0]: # On parcourt les lignes de la clef
                 j = 0
                 while j < 6*alterations[n].shape[1]: # On regarde sur une fenêtre de largeur 7*largeur de l'alteration (7 = nombre de notes max dans une armure)
-                    matchingPix = cv2.countNonZero(img[yclef[k]+i:yclef[k]+i+alterations[n].shape[0], xclef[k]+clef.shape[1]+j:xclef[k]+clef.shape[1]+j+alterations[n].shape[1]]*alterations[n])
-                    notmatchingPix = cv2.countNonZero((1-img[yclef[k]+i:yclef[k]+i+alterations[n].shape[0], xclef[k]+clef.shape[1]+j:xclef[k]+clef.shape[1]+j+alterations[n].shape[1]])*(1-alterations[n]))
+                    matchingPix = cv2.countNonZero(img[yclef[k]-clef.shape[0]//2-15+i:yclef[k]-clef.shape[0]//2-15+i+alterations[n].shape[0], xclef[k]+clef.shape[1]//2+j:xclef[k]+clef.shape[1]//2+j+alterations[n].shape[1]]*alterations[n])
+                    notmatchingPix = cv2.countNonZero((1-img[yclef[k]-clef.shape[0]//2-15+i:yclef[k]-clef.shape[0]//2-15+i+alterations[n].shape[0], xclef[k]+clef.shape[1]//2+j:xclef[k]+clef.shape[1]//2+j+alterations[n].shape[1]])*(1-alterations[n]))
                     if(matchingPix >= cv2.countNonZero(alterations[n])*0.7 and notmatchingPix >= cv2.countNonZero(1-alterations[n])*0.7):
-                        if(xarmure.size == 0): # Si c'est la première altération trouvée
-                            nbrarmure += 1
-                            yarmure = np.append(yarmure,yclef[k]+i)
-                            xarmure = np.append(xarmure,xclef[k]+clef.shape[1]+j)
-                            j += alterations[n].shape[1]
-                            i += 2
+                        if(xtemp.size == 0): # Si c'est la première altération trouvée (pb avec .min() d'une liste vide)
+                            if(xclef[k]+clef.shape[1]//2+j <= xclef[k]+clef.shape[1]//2 + 2*alterations[n].shape[1]):
+                                nbrarmure += 1
+                                ytemp = np.append(ytemp,yclef[k]-clef.shape[0]//2-15+i)
+                                xtemp = np.append(xtemp,xclef[k]+clef.shape[1]//2+j)
+                                j += alterations[n].shape[1]
+                                i += 2
                         else:
-                            if((np.absolute(xarmure - (xclef[k]+clef.shape[1]+j)).min() <= alterations[n].shape[1]//4 and np.absolute(yarmure - (yclef[k]+i)).min() <= alterations[n].shape[0]//4)):
+                            if((np.absolute(xtemp - (xclef[k]+clef.shape[1]//2+j)).min() <= alterations[n].shape[1]//4 and np.absolute(ytemp - (yclef[k]-clef.shape[0]//2+i)).min() <= alterations[n].shape[0]//4)):
                                 # Si on détecte deux fois la même altération
                                 j+=2
                                 i+=1
                                 continue
+                            if((np.absolute(xtemp - (xclef[k]+clef.shape[1]//2+j)).min() >= 2*alterations[n].shape[1])):
+                                # Si on détecte une altération qui n'appartient pas à l'armure
+                                j+=2
+                                i+=1
+                                continue
                             nbrarmure += 1  
-                            yarmure = np.append(yarmure,yclef[k]+i)
-                            xarmure = np.append(xarmure,xclef[k]+clef.shape[1]+j)
+                            ytemp = np.append(ytemp,yclef[k]-clef.shape[0]//2+i)
+                            xtemp = np.append(xtemp,xclef[k]+clef.shape[1]//2+j)
                             # Cela correspond à la position du pixel en haut à gauche de l'altération
                             j += alterations[n].shape[1]
                             i += 2
                     j+=2
                 i+=1
-        
-
+            xarmure = np.append(xarmure,xtemp)
+            yarmure = np.append(yarmure,ytemp)
+            xtemp = np.array([], int)
+            ytemp = np.array([], int)
     print('Armures trouvees :',nbrarmure)
     print('xarmure :',xarmure)
     print('yarmure :',yarmure)
@@ -178,18 +197,20 @@ def detectionAlterationsNotes(alterations, notes, img):
 
 
 J, sol, alterations = pretraitement(I, sol, alterations)
-d = detectionClef(J,sol) # xclef, yclef, img
+d = detectionClef(J,sol) # xclef, coordclef[:][0], img
+coordsClef = test_sol.coords_cle(J)
+print(coordsClef)
 img = d[2]
-a = detectionArmure(J,alterations,d[0],d[1], sol) # nbrarmure, xarmure, yarmure, img
+a = detectionArmure(J,alterations,coordsClef, sol) # nbrarmure, xarmure, yarmure, img
 # alterationsNotes = detectionAlterationsNotes(alterations,diese_bemol.notes,J) # alterationsnotes
-nbrAlterations = a[0]//len(d[0]) #Pas besoin d'une division entière normalement
+# nbrAlterations = a[0]//len(d[0]) #Pas besoin d'une division entière normalement
 ordreDieses = np.array(['FA','DO','SOL','RE','LA','MI','SI'])
-notesAlterees = ordreDieses[:nbrAlterations]
-print(notesAlterees)
+# notesAlterees = ordreDieses[:nbrAlterations]
+# print(notesAlterees)
 # print(alterationsNotes)
-# plt.figure()
-# for i in range(a[0]):
-#     plt.imshow(img[a[2][i]:a[2][i]+alterations[0].shape[0], a[1][i]:a[1][i]+alterations[0].shape[1]], 'gray')
-#     plt.title('x = '+str(a[1][i])+' y = '+str(a[2][i]))
-#     plt.show()
+plt.figure()
+for i in range(a[0]):
+    plt.imshow(img[a[2][i]:a[2][i]+alterations[0].shape[0], a[1][i]:a[1][i]+alterations[0].shape[1]], 'gray')
+    plt.title('x = '+str(a[1][i])+' y = '+str(a[2][i]))
+    plt.show()
 

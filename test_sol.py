@@ -27,7 +27,7 @@ def coords_cle(image):
     
     img = I[:,:int(I.shape[1]/5)]
     
-    sol = cv2.imread('./Images/clefdesol2.png')
+    sol = cv2.imread('Images\clefdesol2.png')
     sol = cv2.cvtColor(sol,cv2.COLOR_RGB2GRAY)
     s = 2*(int(sol.shape[1]/15)//2)+1
     sol = cv2.dilate(sol,np.ones((s,s)))

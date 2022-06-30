@@ -119,7 +119,7 @@ def detectionClef(J, clef):
             j += 1
         i += 1
     return  xclef, yclef, img
-
+# Fonctionne pour les dièses, mais pas encore pour les bémols, besoin de revoirl l'algorithme de détection de clefs
 def detectionArmure(J,alterations,coordclef,clef):
     xclef = [k[1] for k in coordclef]
     yclef = [k[0] for k in coordclef]
